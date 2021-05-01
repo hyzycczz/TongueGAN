@@ -40,3 +40,5 @@ class Maze {
 };
 
 #endif
+
+cout << "hi 韜雨";
