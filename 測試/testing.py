@@ -19,7 +19,7 @@ carrier = amp * np.sin(2*np.pi*3e3*time + mod)
 noise = rng.normal(scale=np.sqrt(noise_power),
                    size=time.shape)
 noise *= np.exp(-time/5)
-x = carrier + noise
+x = carrier + noise # 聲音
 
 plt.figure()
 plt.plot(time, x)
@@ -27,6 +27,7 @@ plt.xlim(0,0.1)
 plt.show()
 
 f, t, Zxx = signal.stft(x, fs, nperseg=1000)
+
 plt.pcolormesh(t, f, np.abs(Zxx), vmin=0, vmax=amp, shading='flat')
 plt.title('STFT Magnitude')
 plt.ylabel('Frequency [Hz]')
