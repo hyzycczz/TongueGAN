@@ -5,12 +5,12 @@ import librosa
 from librosa import display
 
 
-class CRNN(keras.layers.Layer):
+class CRNN(tf.keras.layers.Layer):
     def __init__(self):
         super(CRNN, self).__init__()
         
         self.conv2d_1 = tf.keras.layers.Conv2D(filters=16 , kernel_size=(2,3), strides=(1,2),activation="elu")
-        self.bn_1 = tf.keras.layers.BatchNormalization(axis=-1)
+        self.bn_1 = tf.keras.layers.BatchNormalization(axis=-1)  
         self.conv2d_2 = tf.keras.layers.Conv2D(filters=32 , kernel_size=(2,3), strides=(1,2),activation="elu")
         self.bn_2 = tf.keras.layers.BatchNormalization(axis=-1)
         self.conv2d_3 = tf.keras.layers.Conv2D(filters=64 , kernel_size=(2,3), strides=(1,2),activation="elu")
