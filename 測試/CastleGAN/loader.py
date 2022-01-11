@@ -12,7 +12,7 @@ def load_dataset(dir):
     train_ds = tf.keras.utils.image_dataset_from_directory(
     directory = dir,
     label_mode=None,
-    batch_size = 8,
+    batch_size = 4,
     image_size = (512,512),
     shuffle = True
     )

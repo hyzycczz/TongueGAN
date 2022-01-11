@@ -9,29 +9,22 @@ import matplotlib.pyplot as plt
 import os
 import PIL
 import time
+import cv2
 import argparse
-
-from IPython import display
-from tensorflow.python.data.ops.dataset_ops import make_one_shot_iterator
 
 from loader import make_generator_model, make_discriminator_model, load_dataset, GAN
 from loader import discriminator_loss, generator_loss
-# from loader import end_of_epoch_callback
 
 if __name__ == "__main__":
     Arg = argparse.ArgumentParser()
     Arg.add_argument('--ckptdir', default="./ckpt/checkpoint", help="the dir you save the weight")
     Arg.add_argument('--datasetdir', default='./CastleDataset/', help="Your dataset dir")
+    Arg.add_argument('--outputdir', default='./', help="save Your infered img in dir")
     
     args = Arg.parse_args()
-    # load dataset from directory
-    DATASET_PATH = args.datasetdir
     checkpoint_filepath = args.ckptdir
-    train_dataset = load_dataset(DATASET_PATH)
-    # for data in train_dataset.take(1).as_numpy_iterator():
-      # print(data.shape)
+    img_output_path = args.outputdir
 
-    # G 和 D 模型
     generator = make_generator_model()
     discriminator = make_discriminator_model()
 
@@ -41,13 +34,18 @@ if __name__ == "__main__":
         g_optimizer=tf.keras.optimizers.Adam(1e-4)
     )
 
-    ckpt_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath=checkpoint_filepath,
-        save_weights_only=True,
-        verbose=0,
-        save_freq=1,
-    )
-    # my_callback = end_of_epoch_callback()
+    random_input = tf.random.normal(shape=(8, 100))
+    img = GAN_model.generator(random_input)
+    output = GAN_model.discriminator(img)
+    GAN_model.load_weights(checkpoint_filepath).expect_partial()
 
-    history = GAN_model.fit(train_dataset, epochs=2,callbacks=[ckpt_callback])
-    print(history.history)
+    img = GAN_model.generator(random_input)
+
+    img = img.numpy()
+    if(img is not None):
+        print(img.shape)
+        print("GET img")
+    for i in range(len(img)):
+        cv2.imwrite("{:04d}.png".format(i),img[i])
+    '''
+    '''
