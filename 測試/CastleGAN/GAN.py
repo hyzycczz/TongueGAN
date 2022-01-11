@@ -22,8 +22,8 @@ if __name__ == "__main__":
     Arg = argparse.ArgumentParser()
     Arg.add_argument('--ckptdir', default="./ckpt/checkpoint", help="the dir you save the weight")
     Arg.add_argument('--datasetdir', default='./CastleDataset/', help="Your dataset dir")
-    Arg.add_argument('--saveFreq', default=30, help="the number of frequence you saving data")
-    Arg.add_argument('--epoch', default=1000, help="the number of epoch")
+    Arg.add_argument('--saveFreq',type=int, default=30, help="the number of frequence you saving data")
+    Arg.add_argument('--epoch',type=int, default=1000, help="the number of epoch")
     
     args = Arg.parse_args()
     # load dataset from directory
