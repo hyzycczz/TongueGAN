@@ -22,6 +22,8 @@ if __name__ == "__main__":
     Arg = argparse.ArgumentParser()
     Arg.add_argument('--ckptdir', default="./ckpt/checkpoint", help="the dir you save the weight")
     Arg.add_argument('--datasetdir', default='./CastleDataset/', help="Your dataset dir")
+    Arg.add_argument('--saveFreq', default=30, help="the number of frequence you saving data")
+    Arg.add_argument('--epoch', default=1000, help="the number of epoch")
     
     args = Arg.parse_args()
     # load dataset from directory
@@ -45,9 +47,9 @@ if __name__ == "__main__":
         filepath=checkpoint_filepath,
         save_weights_only=True,
         verbose=0,
-        save_freq=1,
+        save_freq=args.saveFreq,
     )
     # my_callback = end_of_epoch_callback()
 
-    history = GAN_model.fit(train_dataset, epochs=2,callbacks=[ckpt_callback])
+    history = GAN_model.fit(train_dataset, epochs=args.epoch,callbacks=[ckpt_callback])
     print(history.history)
