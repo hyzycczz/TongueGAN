@@ -8,146 +8,132 @@ from tensorflow.python.ops.gen_array_ops import shape
 from tensorflow.python.training.tracking.base import NoRestoreSaveable
 
 # load dataset
-def load_dataset(dir):
+def load_dataset(config):
     train_ds = tf.keras.utils.image_dataset_from_directory(
-    directory = dir,
-    label_mode=None,
-    batch_size = 16,
-    image_size = (512,512),
-    shuffle = True
+        directory = config["dir"],
+        label_mode=config["label_mode"],
+        batch_size = config['batch'],
+        image_size = config['img_size'],
+        shuffle = config['suffle']
     )
     return train_ds
 
-# g model
-def make_generator_model():
-    model = keras.Sequential(
+def load_discriminator():
+    discriminator = keras.Sequential(
         [
-            layers.Dense(10*10*256, use_bias=False, input_shape=(100,)),
-            layers.BatchNormalization(),
-            layers.LeakyReLU(),
-            layers.Reshape((10, 10, 256)),
-
-            layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='valid', use_bias=False),
-            layers.BatchNormalization(),
-            layers.LeakyReLU(),
-
-            layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='valid', use_bias=False),
-            layers.BatchNormalization(),
-            layers.LeakyReLU(),
-
-            layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same', use_bias=False),
-            layers.BatchNormalization(),
-            layers.LeakyReLU(),
-
-            layers.Conv2DTranspose(32, (5, 5), strides=(2, 2), padding='valid', use_bias=False),
-            layers.BatchNormalization(),
-            layers.LeakyReLU(),
-
-            layers.Conv2DTranspose(32, (5, 5), strides=(2, 2), padding='same', use_bias=False),
-            layers.BatchNormalization(),
-            layers.LeakyReLU(),
-
-            layers.Conv2DTranspose(16, (3, 3), strides=(2, 2), padding='valid', use_bias=False),
-            layers.BatchNormalization(),
-            layers.LeakyReLU(),
-
-            layers.Conv2DTranspose(8, (3, 3), strides=(1, 1), padding='valid', use_bias=False),
-            layers.BatchNormalization(),
-            layers.LeakyReLU(),
-
-            layers.Conv2DTranspose(3, (2, 2), strides=(1, 1), padding='valid', use_bias=False,activation="relu"),
-        ]
-    )
-    
-    return model
-
-# d model
-def make_discriminator_model():
-    model = tf.keras.Sequential(
-        [
-            layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same', input_shape=[512, 512, 3]),
-            layers.LeakyReLU(),
-            layers.Dropout(0.3),
-
-            layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same'),
-            layers.LeakyReLU(),
-            layers.Dropout(0.3),
-
-            layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same'),
-            layers.LeakyReLU(),
-            layers.Dropout(0.3),
-
+            keras.Input(shape=(64, 64, 3)),
+            layers.Conv2D(64, kernel_size=4, strides=2, padding="same"),
+            layers.LeakyReLU(alpha=0.2),
+            layers.Conv2D(128, kernel_size=4, strides=2, padding="same"),
+            layers.LeakyReLU(alpha=0.2),
+            layers.Conv2D(128, kernel_size=4, strides=2, padding="same"),
+            layers.LeakyReLU(alpha=0.2),
             layers.Flatten(),
-            layers.Dense(1),
-        ]
+            layers.Dropout(0.2),
+            layers.Dense(1, activation="sigmoid"),
+        ],
+        name="discriminator",
     )
-    return model
+    discriminator.summary()
+    return discriminator
 
+def load_generator(latent_dim):
+    generator = keras.Sequential(
+        [
+            keras.Input(shape=(latent_dim,)),
+            layers.Dense(8 * 8 * 128),
+            layers.Reshape((8, 8, 128)),
+            layers.Conv2DTranspose(128, kernel_size=4, strides=2, padding="same"),
+            layers.LeakyReLU(alpha=0.2),
+            layers.Conv2DTranspose(256, kernel_size=4, strides=2, padding="same"),
+            layers.LeakyReLU(alpha=0.2),
+            layers.Conv2DTranspose(512, kernel_size=4, strides=2, padding="same"),
+            layers.LeakyReLU(alpha=0.2),
+            layers.Conv2D(3, kernel_size=5, padding="same", activation="sigmoid"),
+        ],
+        name="generator",
+    )
+    generator.summary()
+    return generator
 
-# returns a helper function to compute cross entropy loss
-def discriminator_loss(real_output, fake_output):
-    cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-    real_loss = cross_entropy(tf.ones_like(real_output), real_output)
-    fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
-    total_loss = real_loss + fake_loss
-    return total_loss
+class GANMonitor(keras.callbacks.Callback):
+    def __init__(self, num_img=3, latent_dim=128):
+        self.num_img = num_img
+        self.latent_dim = latent_dim
 
-def generator_loss(fake_output):
-    cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-    return cross_entropy(tf.ones_like(fake_output), fake_output)
-
-''' NOT READY TO USE!!!
-# call back used in tf.model.fit()
-class end_of_epoch_callback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
-        keys = list(logs.keys())
-        print("End epoch {} of training; got log keys: {}".format(epoch, keys))
-'''
-
+        random_latent_vectors = tf.random.normal(shape=(self.num_img, self.latent_dim))
+        generated_images = self.model.generator(random_latent_vectors)
+        generated_images *= 255
+        generated_images.numpy()
+        for i in range(self.num_img):
+            img = keras.preprocessing.image.array_to_img(generated_images[i])
+            img.save("./img/generated_img_%03d_%d.png" % (epoch, i))
 
 class GAN(keras.Model):
-    def __init__(self, discriminator, generator):
+    def __init__(self, discriminator, generator, latent_dim):
         super(GAN, self).__init__()
         self.discriminator = discriminator
         self.generator = generator
-        self.gen_loss_tracker = keras.metrics.Mean(name="generator_loss")
-        self.disc_loss_tracker = keras.metrics.Mean(name="discriminator_loss")
-        self.counter = 0
-    
-    @property
-    def metrics(self):
-        return [self.gen_loss_tracker, self.disc_loss_tracker]
-    
-    def compile(self, d_optimizer, g_optimizer, d_loss=discriminator_loss, g_loss=generator_loss):
+        self.latent_dim = latent_dim
+
+    def compile(self, d_optimizer, g_optimizer, loss_fn):
         super(GAN, self).compile()
         self.d_optimizer = d_optimizer
         self.g_optimizer = g_optimizer
-        self.d_loss = d_loss
-        self.g_loss = g_loss
+        self.loss_fn = loss_fn
+        self.d_loss_metric = keras.metrics.Mean(name="d_loss")
+        self.g_loss_metric = keras.metrics.Mean(name="g_loss")
 
-    def train_step(self, data):
-        batch_size = tf.shape(data)[0]
-        random_input = tf.random.normal(shape=(batch_size, 100))
+    @property
+    def metrics(self):
+        return [self.d_loss_metric, self.g_loss_metric]
 
-        with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            generate_img = self.generator(random_input)
+    def train_step(self, real_images):
+        # Sample random points in the latent space
+        batch_size = tf.shape(real_images)[0]
+        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim))
 
-            real_output = self.discriminator(data)
-            fake_output = self.discriminator(generate_img)
+        # Decode them to fake images
+        generated_images = self.generator(random_latent_vectors)
 
-            gen_loss = self.g_loss(fake_output)
-            disc_loss = self.d_loss(real_output, fake_output)
-        
-        gradient_of_gen = gen_tape.gradient(gen_loss, self.generator.trainable_weights)
-        gradient_of_disc = disc_tape.gradient(disc_loss, self.discriminator.trainable_weights)
+        # Combine them with real images
+        combined_images = tf.concat([generated_images, real_images], axis=0)
 
-        self.g_optimizer.apply_gradients(zip(gradient_of_gen, self.generator.trainable_weights))
-        self.d_optimizer.apply_gradients(zip(gradient_of_disc, self.discriminator.trainable_weights))
+        # Assemble labels discriminating real from fake images
+        labels = tf.concat(
+            [tf.ones((batch_size, 1)), tf.zeros((batch_size, 1))], axis=0
+        )
+        # Add random noise to the labels - important trick!
+        labels += 0.05 * tf.random.uniform(tf.shape(labels))
 
-        self.gen_loss_tracker.update_state(gen_loss)
-        self.disc_loss_tracker.update_state(disc_loss)
+        # Train the discriminator
+        with tf.GradientTape() as tape:
+            predictions = self.discriminator(combined_images)
+            d_loss = self.loss_fn(labels, predictions)
+        grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
+        self.d_optimizer.apply_gradients(
+            zip(grads, self.discriminator.trainable_weights)
+        )
 
-        return{
-            "g_loss": self.gen_loss_tracker.result(),
-            "d_loss": self.disc_loss_tracker.result(),
+        # Sample random points in the latent space
+        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim))
+
+        # Assemble labels that say "all real images"
+        misleading_labels = tf.zeros((batch_size, 1))
+
+        # Train the generator (note that we should *not* update the weights
+        # of the discriminator)!
+        with tf.GradientTape() as tape:
+            predictions = self.discriminator(self.generator(random_latent_vectors))
+            g_loss = self.loss_fn(misleading_labels, predictions)
+        grads = tape.gradient(g_loss, self.generator.trainable_weights)
+        self.g_optimizer.apply_gradients(zip(grads, self.generator.trainable_weights))
+
+        # Update metrics
+        self.d_loss_metric.update_state(d_loss)
+        self.g_loss_metric.update_state(g_loss)
+        return {
+            "d_loss": self.d_loss_metric.result(),
+            "g_loss": self.g_loss_metric.result(),
         }
