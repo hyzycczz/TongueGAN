@@ -3,3 +3,5 @@ venv
 .obsidian
 *.sh
 ckpt*
+dataset
+ton
