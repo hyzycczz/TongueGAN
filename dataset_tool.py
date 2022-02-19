@@ -12,14 +12,14 @@ import numpy as np
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--dataset', type=str, default='ton', help="dataset 的路徑")
-parser.add_argument('--output', type=str, default='dataset', help="轉換後要放的路徑")
+parser.add_argument('--output', type=str, default='inputData', help="轉換後要放的路徑")
 
 args = parser.parse_args()
 
 # ------------------- util -------------------
 def pre_config(dataPath, outputPath):
     '''
-    檢查 dataPath 與 outputPath 路徑
+    檢查 dataPath 與 outputPath 路徑：
     '''
     try:
         if(not os.path.isdir(dataPath)):
@@ -48,7 +48,9 @@ def pre_config(dataPath, outputPath):
 
 def recursiveFindFile(dataPath, outputPath):
     '''
-        將路徑中的資料都複製到 outputPath
+    將路徑中的資料都複製到 outputPath：
+        - 使用 DFS 的方式列出 dataPath 目錄底下的所有接受檔案，並複製到 outputPath 目錄。
+            接受檔案為：txt, jpg, png, JPG, PNG
     '''
     print("資料複製中：")
 
@@ -73,7 +75,9 @@ def recursiveFindFile(dataPath, outputPath):
 
 def cropingImage(outputPath):
     '''
-        依據 label 切割資料
+    依據 label 切割資料：
+        - 先列出所有 labels 和 images 檔名，
+        - 再輸入 cropping 函式時，將完整路徑 join 起來。
     '''
     print("切割中:")
     Path = os.path.join(outputPath, "cropped")

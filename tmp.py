@@ -1,4 +1,7 @@
-with open("313.txt") as f:
-    s = f.read().split()
+def three(tmp):
+    return 1,2,3
 
-print(s)
+a, b, c = [three(block) for block in range(5)]
+print(a)
+print(b)
+print(c)

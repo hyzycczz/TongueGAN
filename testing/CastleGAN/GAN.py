@@ -8,7 +8,6 @@ from yaml import Loader
 
 from loader import load_dataset, load_discriminator, load_generator, WGAN, GANMonitor, generator_loss, discriminator_loss
 
-
 if __name__ == "__main__":
     ''' --------------DCGAN START HERE--------------
     # load configuration from "config.yml"
