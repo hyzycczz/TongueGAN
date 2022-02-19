@@ -23,14 +23,14 @@ def pre_config(dataPath, outputPath):
     '''
     try:
         if(not os.path.isdir(dataPath)):
-            raise OSError("dataPath 路徑不存在")
+            raise OSError("dataPath:{} 不存在".format(dataPath))
         
         if(not os.path.isdir(outputPath)):
             os.mkdir(outputPath)
             os.mkdir(os.path.join(outputPath, "label"))
             os.mkdir(os.path.join(outputPath, "image"))
         else:
-            x = input("路徑outputPath存在，是否要清空路徑 (y/n):").lower()
+            x = input("outputPath:{} 存在，是否要清空路徑 (y/n):".format(outputPath)).lower()
             if(x == 'y'):
                 shutil.rmtree(os.path.join(outputPath))
                 os.mkdir(outputPath)
@@ -83,35 +83,35 @@ def cropingImage(outputPath):
     Path = os.path.join(outputPath, "cropped")
     labelPath = os.path.join(outputPath, "label")
     imagePath = os.path.join(outputPath, "image")
-    os.mkdir(Path)
+    #os.mkdir(Path)
     
-    labels = os.listdir(labelPath)
+    real_labels = os.listdir(labelPath)
     images = os.listdir(imagePath)
+    
+    fake_labels = list(map(lambda x: x[:-3] +'txt', images))
 
-    labels.sort()
-    images.sort()
-
-    zipdata = zip(labels, images)
+    zipdata = list(zip(fake_labels, images))
+    
     for labelName, imageName in zipdata:
-        print("cropping {}".format(imageName))
         assert labelName[:-4] == imageName[:-4], "{} 和 {}檔名不同".format(labelName, imageName)
         img = cropping(os.path.join(imagePath, imageName) ,os.path.join(labelPath, labelName))
-        cv2.imwrite(os.path.join(Path, "{}.png".format(labelName[:-4])), img)
+        if(img is not None):
+            cv2.imwrite(os.path.join(Path, "{}.png".format(labelName[:-4])), img)
     
     return
 
 
 def cropping(imagedir, labeldir):
     img = cv2.imread(imagedir)
-    
-    with open(labeldir) as f:
-        label = f.read().split()
-    
     try:
-        label = [float(i) for i in label]
+        with open(labeldir) as f:
+            label = f.read().split()
     except:
-        print("錯誤發生路徑:", labeldir)
-        sys.exit(0)
+        print("missing: {}".format(labeldir))
+        return
+    
+    print("cropping: {}".format(imagedir))
+    label = [float(i) for i in label]
     H, W, C = img.shape
 
     w = int(label[3] * W)
