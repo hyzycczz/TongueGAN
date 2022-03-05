@@ -28,6 +28,6 @@ dataset = create_dataset(args)
 dataset = dataset.map(augmentation)
 
 model = Pix2Pix(args)
-model.compile(G_opter=gen_opt, 
-              D_opter=disc_opt)
+model.compile(G_opter=tf.keras.optimizers.Adam(2e-4, beta_1=0.5), 
+              D_opter=tf.keras.optimizers.Adam(2e-4, beta_1=0.5))
 model.fit(dataset, epochs=args.epoch)
