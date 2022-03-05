@@ -1,6 +1,8 @@
 import tensorflow as tf
 from tensorflow import keras
 
+import os
+
 
 class G_model(keras.Model):
     '''
@@ -35,7 +37,7 @@ class G_model(keras.Model):
             self.upsample(64, 4),                           # 256x256
         ]
 
-        # Back to 512x512
+        # Back to 512x512x3
         self.last_output = tf.keras.layers.Conv2DTranspose(filters=self.OUTPUT_CHANNELS,
                                                            kernel_size=4,
                                                            strides=2,
@@ -153,8 +155,7 @@ class Pix2Pix(keras.Model):
         super(Pix2Pix, self).__init__()
         self.G = G_model()
         self.D = D_model()
-        self.g_step = args.g_step
-        self.d_step = args.d_step
+
         return
 
     def call(self, images, training=False):
@@ -169,31 +170,6 @@ class Pix2Pix(keras.Model):
         self.G_loss = self.generator_loss
         self.D_loss = self.discriminator_loss
         return
-
-    def train_step(self, images):
-        mask, image = images
-        # train discriminator
-        for d_step in range(self.d_step):
-            with tf.GradientTape() as d_tape:
-                fake_image = self.G(mask, training=False)
-                fake_pred = self.D(mask, fake_image, training=True)
-                real_pred = self.D(mask, image, training=True)
-                disc_loss = self.D_loss(real_pred, fake_pred)
-            
-            D_gradients = d_tape.gradient(disc_loss, self.D.trainable_variables)
-            self.D_opter.apply_gradients(zip(D_gradients, self.D.trainable_variables))
-
-        # train generator
-        for g_step in range(self.g_step):
-            with tf.GradientTape() as g_tape:
-                fake_image = self.G(mask, training=True)
-                fake_pred = self.D(mask, fake_image, training=False)
-                total_gen_loss,  gan_loss, l1_loss = self.G_loss(fake_pred, fake_image, image)
-            
-            G_gradients = g_tape.gradient(total_gen_loss, self.G.trainable_variables)
-            self.G_opter.apply_gradients(zip(G_gradients, self.G.trainable_variables))
-
-        return total_gen_loss, disc_loss
 
     def generator_loss(self, fake_pred, fake_image, real_image):
         LAMBDA = 100
