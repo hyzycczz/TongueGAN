@@ -8,7 +8,7 @@ import cv2
 def augmentation(img):
 
     mask = img[:, :, :, 3:]/255
-    img = img[:, :, :, :3]
+    img = img[:, :, :, :3]/255
     if (tf.random.uniform(()) > 0.5):
         img = tf.image.flip_left_right(img)
         mask = tf.image.flip_left_right(mask)

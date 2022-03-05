@@ -1,13 +1,7 @@
-from subprocess import call
-from tracemalloc import start
 import numpy as np
-from parso import parse
 import tensorflow as tf
-import cv2
 import os
 import datetime
-import display
-
 import argparse
 
 from dataset import create_dataset, augmentation
@@ -73,9 +67,9 @@ for step, images in dataset.repeat().take(args.step).enumerate(start=1):
 
     if (step % args.log_img_interval == 0):
         with writer.as_default():
-            tf.summary.image("mask", mask[0], step)
-            tf.summary.image("real_image", image[0], step)
-            tf.summary.image("fake_image", fake_img[0], step)
+            tf.summary.image("mask", mask[:1], step)
+            tf.summary.image("real_image", image[:1], step)
+            tf.summary.image("fake_image", fake_img[:1], step)
     
     if (step % args.ckpt_interval == 0):
         checkpoint.save(file_prefix=ckpt_dir)
