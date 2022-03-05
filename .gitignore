@@ -1,7 +1,1 @@
-venv
-.vscode
-.obsidian
-*.sh
-ckpt*
-dataset
-ton
+*png
