@@ -1,7 +1,0 @@
-dataset:
-  dir: "./CastleDataset/"
-  img_size: [64, 64]
-  batch: 16
-  suffle: true
-  label_mode: NULL
-
