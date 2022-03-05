@@ -6,6 +6,7 @@ import tensorflow as tf
 import cv2
 import os
 import datetime
+import display
 
 import argparse
 
@@ -79,8 +80,8 @@ for step, images in dataset.repeat().take(args.step).enumerate(start=1):
     if (step % args.ckpt_interval == 0):
         checkpoint.save(file_prefix=ckpt_dir)
     
-    if (step % 10 == 0):
-      print('.', end='', flush=True)
+    # Training Animation 
+    
 
 '''
 ckpt_callback = tf.keras.callbacks.ModelCheckpoint(filepath=ckpt_dir,
